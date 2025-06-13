@@ -4,7 +4,7 @@ const createCsvWriter = require('csv-writer').createObjectCsvWriter;
 const path = require('path');
 
 const inputCsvPath = 'input.csv';
-const outputCsvPath = 'npm_release_dates.csv';
+const outputCsvPath = 'output/npm_release_dates.csv';
 
 function formatDate(dateStr) {
   if (!dateStr) return 'Not found';
