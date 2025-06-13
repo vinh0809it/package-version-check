@@ -1,0 +1,5 @@
+lib,cur_ver
+@expo/sdk-runtime-versions,1.0.0
+@expo/spawn-async,1.7.2
+@expo-google-fonts/space-grotesk,0.2.2
+@fancyapps/ui,4.0.31
