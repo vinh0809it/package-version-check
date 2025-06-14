@@ -11,6 +11,10 @@ Useful for auditing project dependencies and identifying potentially unmaintaine
 
 ---
 
+## 📗 Usage
+1. ```npm install```
+2. ```node npm-check.js```
+
 ## 📂 Input Format
 
 The input should be a CSV file named `input.csv` in the following format:

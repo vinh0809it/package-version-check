@@ -47,7 +47,7 @@ async function getReleaseDates(pkg) {
     const latestVerDeprecated = data.versions?.[latest_ver]?.deprecated || '';
 
     const readme = data.readme || '';
-    const readmeWarn = /deprecated|no longer maintained|end of life|eol|unmaintained/i.test(readme);
+    const readmeWarn = /deprecated|no longer maintained|end of life|eol|unmaintained|dropped|removed/i.test(readme);
 
     return {
       lib: pkg.lib,
