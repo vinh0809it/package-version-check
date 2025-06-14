@@ -2,9 +2,17 @@ const fs = require('fs');
 const csv = require('csv-parser');
 const createCsvWriter = require('csv-writer').createObjectCsvWriter;
 const path = require('path');
+const cliProgress = require('cli-progress');
 
 const inputCsvPath = 'input.csv';
 const outputCsvPath = 'output/npm_release_dates.csv';
+
+const progressBar = new cliProgress.SingleBar({
+  format: '⏳ Progress |{bar}| {percentage}% || {value}/{total} done || elapsed: {duration}s',
+  barCompleteChar: '█',
+  barIncompleteChar: '░',
+  hideCursor: true
+}, cliProgress.Presets.legacy);
 
 function formatDate(dateStr) {
   if (!dateStr) return 'Not found';
@@ -72,7 +80,6 @@ async function getReleaseDates(pkg) {
 }
 
 async function writeOutputCSV(records, filePath) {
-
     let finalPath = filePath;
     let counter = 1;
 
@@ -98,18 +105,27 @@ async function writeOutputCSV(records, filePath) {
         ]
     });
 
-    await csvWriter.writeRecords(records);
-    console.log(`✅ Output written to ${finalPath}`);
+  await csvWriter.writeRecords(records);
+
+  return finalPath;
 }
 
 (async () => {
   const input = await readInputCSV(inputCsvPath);
   const results = [];
 
-  for (const pkg of input) {
+  progressBar.start(input.length, 0);
+
+  for (const [index, pkg] of input.entries()) {
     const info = await getReleaseDates(pkg);
     results.push(info);
+
+    progressBar.update(index + 1);
   }
 
-  await writeOutputCSV(results, outputCsvPath);
+  progressBar.stop();
+
+  console.log(`📄 Writing to output CSV`);
+  const finalPath = await writeOutputCSV(results, outputCsvPath);
+  console.log(`✅ Output written to ${finalPath}`);
 })();
