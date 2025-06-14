@@ -80,30 +80,30 @@ async function getReleaseDates(pkg) {
 }
 
 async function writeOutputCSV(records, filePath) {
-    let finalPath = filePath;
-    let counter = 1;
+  let finalPath = filePath;
+  let counter = 1;
 
-    const ext = path.extname(filePath); 
-    const base = path.basename(filePath, ext);
-    const dir = path.dirname(filePath); 
+  const ext = path.extname(filePath); 
+  const base = path.basename(filePath, ext);
+  const dir = path.dirname(filePath); 
 
-    while (fs.existsSync(finalPath)) {
-        finalPath = path.join(dir, `${base}_${counter}${ext}`);
-        counter++;
-    }
+  while (fs.existsSync(finalPath)) {
+    finalPath = path.join(dir, `${base}_${counter}${ext}`);
+    counter++;
+  }
 
-    const csvWriter = createCsvWriter({
-        path: finalPath,
-        header: [
-        { id: 'lib', title: 'lib' },
-        { id: 'cur_ver', title: 'cur_ver' },
-        { id: 'cur_ver_date', title: 'cur_ver_date' },
-        { id: 'latest_ver', title: 'latest_ver' },
-        { id: 'latest_ver_date', title: 'latest_ver_date' },
-        { id: 'deprecated', title: 'deprecated' },
-        { id: 'readme_flag', title: 'readme_flag' }
-        ]
-    });
+  const csvWriter = createCsvWriter({
+    path: finalPath,
+    header: [
+    { id: 'lib', title: 'lib' },
+    { id: 'cur_ver', title: 'cur_ver' },
+    { id: 'cur_ver_date', title: 'cur_ver_date' },
+    { id: 'latest_ver', title: 'latest_ver' },
+    { id: 'latest_ver_date', title: 'latest_ver_date' },
+    { id: 'deprecated', title: 'deprecated' },
+    { id: 'readme_flag', title: 'readme_flag' }
+    ]
+  });
 
   await csvWriter.writeRecords(records);
 
