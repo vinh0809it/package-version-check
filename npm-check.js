@@ -64,17 +64,74 @@ async function getReleaseDates(pkg) {
       latest_ver,
       latest_ver_date: formatDate(time[latest_ver]),
       deprecated: curVerDeprecated || latestVerDeprecated ? 'Yes' : '',
-      readme_flag: readmeWarn ? 'Possible deprecation' : ''
+      readme_flag: readmeWarn ? 'Possible deprecation' : '',
+      src: 'npm'
     };
   } catch (e) {
+
+    const packagistFallback = await getPackagistInfo(pkg.lib, pkg.cur_ver);
     return {
       lib: pkg.lib,
-      cur_ver: pkg.cur_ver,
+      source: 'packagist',
+      cur_ver: packagistFallback.cur_ver,
+      cur_ver_date: packagistFallback.cur_ver_date,
+      latest_ver: packagistFallback.latest_ver,
+      latest_ver_date: packagistFallback.latest_ver_date,
+      deprecated: packagistFallback.abandoned ? 'Yes' : '',
+      readme_flag: '',
+      src: 'packagist'
+    };
+  }
+}
+
+async function getPackagistInfo(lib, cur_ver) {
+  const url = `https://repo.packagist.org/p2/${lib}.json`;
+
+  try {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error('Packagist fetch failed');
+    const data = await res.json();
+
+    const versions = data.packages?.[lib];
+    const cleanCurVer = cur_ver.replace(/^v/, '');
+
+    let cur_ver_date = '';
+    let latest_ver = '';
+    let latest_ver_date = '';
+    let abandoned = '';
+
+    for (const v of versions) {
+      const verClean = v.version.replace(/^v/, '');
+      if (verClean === cleanCurVer) {
+        cur_ver_date = v.time?.split('T')[0];
+        cur_ver_date = formatDate(cur_ver_date);
+      }
+    }
+
+    if (versions.length > 0) {
+      latest_ver = versions[0].version;
+      latest_ver_date = versions[0].time?.split('T')[0];
+      latest_ver_date = formatDate(latest_ver_date);
+      abandoned = versions[0].abandoned || '';
+    }
+
+    return {
+      lib,
+      cur_ver,
+      cur_ver_date,
+      latest_ver,
+      latest_ver_date,
+      abandoned
+    };
+  } catch (e) {
+    console.log(e);
+    return {
+      lib,
+      cur_ver,
       cur_ver_date: 'ERROR',
       latest_ver: 'ERROR',
       latest_ver_date: 'ERROR',
-      deprecated: 'ERROR',
-      readme_flag: 'ERROR'
+      abandoned: 'ERROR'
     };
   }
 }
@@ -101,7 +158,8 @@ async function writeOutputCSV(records, filePath) {
     { id: 'latest_ver', title: 'latest_ver' },
     { id: 'latest_ver_date', title: 'latest_ver_date' },
     { id: 'deprecated', title: 'deprecated' },
-    { id: 'readme_flag', title: 'readme_flag' }
+    { id: 'readme_flag', title: 'readme_flag' },
+    { id: 'src', title: 'src' }
     ]
   });
 
