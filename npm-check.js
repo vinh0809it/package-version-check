@@ -124,7 +124,6 @@ async function getPackagistInfo(lib, cur_ver) {
       abandoned
     };
   } catch (e) {
-    console.log(e);
     return {
       lib,
       cur_ver,
