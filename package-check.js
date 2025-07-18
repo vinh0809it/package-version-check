@@ -175,12 +175,15 @@ async function getPyPiInfo(lib, cur_ver) {
   const latestRelease = releases[latest_ver]?.[0];
   const readmeWarn = /deprecated|no longer maintained|end of life|eol|unmaintained|dropped|removed/i.test(data.info.description) ? 'Possible deprecation' : '';
 
+  const curVerDate = curRelease?.upload_time?.split('T')[0];
+  const latestVerDate = latestRelease?.upload_time?.split('T')[0];
+
   return {
     lib,
     cur_ver,
-    cur_ver_date: curRelease?.upload_time?.split('T')[0] || '',
+    cur_ver_date: formatDate(curVerDate),
     latest_ver,
-    latest_ver_date: latestRelease?.upload_time?.split('T')[0] || '',
+    latest_ver_date: formatDate(latestVerDate),
     deprecated: data.info.yanked ? 'Yes' : '',
     readme_flag: readmeWarn,
     src: 'pypi'
