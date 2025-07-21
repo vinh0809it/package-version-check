@@ -69,47 +69,53 @@ async function getReleaseDates(pkg) {
     cur_ver_date: 'ERROR',
     latest_ver: 'ERROR',
     latest_ver_date: 'ERROR',
-    abandoned: 'ERROR'
+    deprecated: 'ERROR',
+    readme_flag: 'ERROR',
+    src: 'ERROR',
+    url: 'ERROR'
   };
 }
 
 async function getNpmInfo(lib, cur_ver) {
-    const url = `https://registry.npmjs.org/${lib}`;
+  const url = `https://registry.npmjs.org/${lib}`;
+  const src_url = `https://www.npmjs.com/package/${lib}`;
 
-    const res = await fetch(url);
-    if (!res.ok) throw new Error(`Npm fetch failed`);
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`Npm fetch failed`);
 
-    const data = await res.json();
-    const time = data.time || {};
+  const data = await res.json();
+  const time = data.time || {};
 
-    const isMatchVersion = !data.versions || !data.versions[cur_ver];
+  const isMatchVersion = !data.versions || !data.versions[cur_ver];
 
-    if (isMatchVersion) {
-      throw new Error(`Version ${cur_ver} not found for ${lib}`);
-    }
+  if (isMatchVersion) {
+    throw new Error(`Version ${cur_ver} not found for ${lib}`);
+  }
 
-    const latest_ver = data['dist-tags']?.latest;
+  const latest_ver = data['dist-tags']?.latest;
 
-    const curVerDeprecated = data.versions?.[cur_ver]?.deprecated || '';
-    const latestVerDeprecated = data.versions?.[latest_ver]?.deprecated || '';
+  const curVerDeprecated = data.versions?.[cur_ver]?.deprecated || '';
+  const latestVerDeprecated = data.versions?.[latest_ver]?.deprecated || '';
 
-    const readme = data.readme || '';
-    const readmeWarn = /deprecated|no longer maintained|end of life|eol|unmaintained|dropped|removed/i.test(readme);
+  const readme = data.readme || '';
+  const readmeWarn = /deprecated|no longer maintained|end of life|eol|unmaintained|dropped|removed/i.test(readme);
 
-    return {
-      lib: lib,
-      cur_ver: cur_ver,
-      cur_ver_date: formatDate(time[cur_ver]),
-      latest_ver,
-      latest_ver_date: formatDate(time[latest_ver]),
-      deprecated: curVerDeprecated || latestVerDeprecated ? 'Yes' : '',
-      readme_flag: readmeWarn ? 'Possible deprecation' : '',
-      src: 'npm'
-    };
+  return {
+    lib: lib,
+    cur_ver: cur_ver,
+    cur_ver_date: formatDate(time[cur_ver]),
+    latest_ver,
+    latest_ver_date: formatDate(time[latest_ver]),
+    deprecated: curVerDeprecated || latestVerDeprecated ? 'Yes' : '',
+    readme_flag: readmeWarn ? 'Possible deprecation' : '',
+    src: 'npm',
+    url: src_url
+  };
 }
 
 async function getPackagistInfo(lib, cur_ver) {
   const url = `https://repo.packagist.org/p2/${lib}.json`;
+  const src_url = `https://packagist.org/packages/${lib}`;
 
   const res = await fetch(url);
   if (!res.ok) throw new Error('Packagist fetch failed');
@@ -121,7 +127,8 @@ async function getPackagistInfo(lib, cur_ver) {
   let cur_ver_date = '';
   let latest_ver = '';
   let latest_ver_date = '';
-  let abandoned = '';
+  let curAbandoned = false;
+  let latestAbandoned = false;
 
   const isMatchVersion = versions.find(v => v.version === cur_ver);
   if (!isMatchVersion) {
@@ -133,6 +140,7 @@ async function getPackagistInfo(lib, cur_ver) {
     if (verClean === cleanCurVer) {
       cur_ver_date = v.time?.split('T')[0];
       cur_ver_date = formatDate(cur_ver_date);
+      curAbandoned = v.abandoned || false
     }
   }
 
@@ -140,8 +148,10 @@ async function getPackagistInfo(lib, cur_ver) {
     latest_ver = versions[0].version;
     latest_ver_date = versions[0].time?.split('T')[0];
     latest_ver_date = formatDate(latest_ver_date);
-    abandoned = versions[0].abandoned || '';
+    latestAbandoned = versions[0].abandoned || false;
   }
+
+  const deprecated = curAbandoned || latestAbandoned ? 'Yes' : '';
 
   return {
     lib: lib,
@@ -149,14 +159,16 @@ async function getPackagistInfo(lib, cur_ver) {
     cur_ver_date: cur_ver_date,
     latest_ver: latest_ver,
     latest_ver_date: latest_ver_date,
-    deprecated: abandoned ? 'Yes' : '',
+    deprecated: deprecated,
     readme_flag: '',
-    src: 'packagist'
+    src: 'packagist',
+    url: src_url
   };
 }
 
 async function getPyPiInfo(lib, cur_ver) {
   const url = `https://pypi.org/pypi/${lib}/json`;
+  const src_url = `https://pypi.org/project/${lib}/`;
 
   const res = await fetch(url);
   if (!res.ok) throw new Error('PyPI fetch failed');
@@ -178,15 +190,19 @@ async function getPyPiInfo(lib, cur_ver) {
   const curVerDate = curRelease?.upload_time?.split('T')[0];
   const latestVerDate = latestRelease?.upload_time?.split('T')[0];
 
+  const curVerYanked = curRelease?.yanked === true;
+  const latestVerYanked = latestRelease?.yanked === true;
+
   return {
     lib,
     cur_ver,
     cur_ver_date: formatDate(curVerDate),
     latest_ver,
     latest_ver_date: formatDate(latestVerDate),
-    deprecated: data.info.yanked ? 'Yes' : '',
+    deprecated: curVerYanked || latestVerYanked ? 'Yes' : '',
     readme_flag: readmeWarn,
-    src: 'pypi'
+    src: 'pypi',
+    url: src_url
   };
 }
 
@@ -213,7 +229,8 @@ async function writeOutputCSV(records, filePath) {
     { id: 'latest_ver_date', title: 'latest_ver_date' },
     { id: 'deprecated', title: 'deprecated' },
     { id: 'readme_flag', title: 'readme_flag' },
-    { id: 'src', title: 'src' }
+    { id: 'src', title: 'src' },
+    { id: 'url', title: 'url' }
     ]
   });
 
